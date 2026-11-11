@@ -3,10 +3,9 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ["app/**", "requirements.txt", "installer/**", ".github/workflows/windows-build.yml"]
+    paths: ["app/**", "launcher.py", "requirements.txt", "installer/**", ".github/workflows/windows-build.yml"]
 permissions:
   contents: read
-  actions: read
 jobs:
   build:
     runs-on: windows-latest
@@ -17,16 +16,16 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install --upgrade pip
       - run: pip install -r requirements.txt pyinstaller
-      - run: pyinstaller --noconfirm --clean --onedir --name AdvertisingPrintERP --collect-all fastapi --collect-all sqlalchemy --collect-all uvicorn app/main.py
-      - name: Package application files
+      - run: pyinstaller --noconfirm --clean --onedir --name AdvertisingPrintERP --collect-all fastapi --collect-all sqlalchemy --collect-all uvicorn launcher.py
+      - name: Install Inno Setup
+        run: choco install innosetup --yes --no-progress
+      - name: Build installer
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force dist/AdvertisingPrintERP/data | Out-Null
-          Copy-Item README.md dist/AdvertisingPrintERP/
-          Compress-Archive -Path dist/AdvertisingPrintERP/* -DestinationPath dist/AdvertisingPrintERP-Pilot.zip -Force
+          & "$env:ProgramFiles(x86)\Inno Setup 6\ISCC.exe" installer/AdvertisingPrintERP.iss
       - uses: actions/upload-artifact@v4
         with:
-          name: AdvertisingPrintERP-Windows-Pilot
-          path: dist/AdvertisingPrintERP-Pilot.zip
+          name: AdvertisingPrintERP-Windows-Setup
+          path: installer/Output/AdvertisingPrintERP-Setup.exe
           if-no-files-found: error
           retention-days: 30
