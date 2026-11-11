@@ -1,0 +1,32 @@
+name: Windows pilot build
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["app/**", "requirements.txt", "installer/**", ".github/workflows/windows-build.yml"]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: pip install -r requirements.txt pyinstaller
+      - run: pyinstaller --noconfirm --clean --onedir --name AdvertisingPrintERP --collect-all fastapi --collect-all sqlalchemy --collect-all uvicorn app/main.py
+      - name: Package application files
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist/AdvertisingPrintERP/data | Out-Null
+          Copy-Item README.md dist/AdvertisingPrintERP/
+          Compress-Archive -Path dist/AdvertisingPrintERP/* -DestinationPath dist/AdvertisingPrintERP-Pilot.zip -Force
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AdvertisingPrintERP-Windows-Pilot
+          path: dist/AdvertisingPrintERP-Pilot.zip
+          if-no-files-found: error
+          retention-days: 30
