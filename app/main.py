@@ -1,13 +1,17 @@
 from pathlib import Path
 from datetime import datetime
+import os
+import sys
 from fastapi import FastAPI, Request, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import create_engine, String, Integer, DateTime, Text, ForeignKey, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
-BASE = Path(__file__).resolve().parent.parent
-DATA = BASE / "data"
-DATA.mkdir(exist_ok=True)
+if getattr(sys, "frozen", False):
+    DATA = Path(os.environ.get("LOCALAPPDATA", Path.home())) / "AdvertisingPrintERP" / "data"
+else:
+    DATA = Path(__file__).resolve().parent.parent / "data"
+DATA.mkdir(parents=True, exist_ok=True)
 engine = create_engine(f"sqlite:///{DATA / 'erp.db'}", connect_args={"check_same_thread": False})
 Session = sessionmaker(engine, expire_on_commit=False)
 
